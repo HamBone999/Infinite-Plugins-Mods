@@ -1,6 +1,6 @@
 # Minecraft Infinite server plugins
 
-The three server-side addons running on `hamsite.lol`, built against server jar
+The three server-side addons running on `mc.hamsite.lol` the public beta testing server for MC Infinite, built against server jar
 **1.0-010926**.
 
 They are "mods" in the loader's language -- a jar with `META-INF/infinite.mods.toml` in it --
