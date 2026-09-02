@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "hamfix.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "ChunkGenGuardMixin",
+    "TickBlocksMixin",
+    "ConnThrottleMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

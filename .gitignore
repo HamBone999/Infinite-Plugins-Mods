@@ -1,0 +1,5 @@
+# build inputs and outputs, not sources
+server.jar
+InfiniteLoader.jar
+lib/
+build/

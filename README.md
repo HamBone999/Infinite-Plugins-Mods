@@ -1,75 +1,97 @@
 # Minecraft Infinite server plugins
 
-The three server-side addons running on `mc.hamsite.lol` the public beta testing server for MC Infinite, built against server jar
-**1.0-010926**.
+The server-side addons running on `mc.hamsite.lol`, the public beta server for Minecraft
+Infinite Reborn.
 
-They are "mods" in the loader's language -- a jar with `META-INF/infinite.mods.toml` in it --
-but they behave the way a Bukkit plugin does: drop them in, restart, configure with a text file.
+They are "mods" in the loader's language — a jar with `META-INF/infinite.mods.toml` in it — but
+they behave the way a Bukkit plugin does: drop them in, restart, configure with a text file.
+None of them registers a block, item or entity, so the client needs no changes and the registry
+sync is untouched. All are server-side only.
 
 ```
 mods/     the jars. Copy into  /opt/infinite/server/mods/
-config/   anticheat.properties. Lives in the WORLD folder, not next to the jar.
-src/      full source for all three, so they can be rebuilt or edited.
+src/      full source for every addon, including two that are no longer shipped
+config/   example config. These live in the WORLD folder, not next to the jar.
 ```
 
 ## Installing
 
 1. Copy everything in `mods/` into the server's `mods/` folder.
-2. Restart the server. `sudo systemctl restart infinite`
-3. On boot the loader prints what it found:
+2. Restart. `sudo systemctl restart infinite`
+3. The loader prints what it found:
 
 ```
-[infinite] mods      : 3 to load
-[infinite]             anticheat 0.1.0  (anticheat-0.1.0.jar)
-[infinite]             landclaim 0.1.0  (landclaim-0.1.0.jar)
-[infinite]             perms 0.1.0  (perms-0.1.0.jar)
+[infinite] mods      : 4 to load
+[infinite]             anticheat 0.1.0     (anticheat-0.1.0.jar)
+[infinite]             landclaim 0.1.0     (landclaim-0.1.0.jar)
+[infinite]             perms 0.1.0         (perms-0.1.0.jar)
+[infinite]             worldprotect 0.1.0  (worldprotect-0.1.0.jar)
 ```
 
 > [!IMPORTANT]
-> Only files ending in `.jar` are loaded. Keep backups somewhere else -- a stray
-> `something.jar.bak` in `mods/` is ignored, but it warns about it on every boot.
-> To turn a mod off without deleting it, rename it to `.jar.disabled`.
+> Only files ending in `.jar` load. To turn one off without deleting it, rename it to
+> `.jar.disabled` — a stray `.jar.bak` is ignored but warned about on every boot.
 
 ## What each one does
 
 | Mod | Purpose | Data it writes, in the world folder |
 | --- | --- | --- |
-| **perms** | Ranks and nameplates: `[Owner]`, `[Admin]`, `[Player]`. `/perms`, `/nick`. Owner-only commands are gated here. | `perm-groups.tsv`, `perm-players.tsv`, `nicknames.tsv` |
-| **landclaim** | Block-protection claims. | `landclaims.tsv` |
-| **anticheat** | Detection only, see below. `/ac` shows recent flags. | `ac-alerts.tsv`, `ac-seen.tsv` |
+| **worldprotect** | Operator regions with flags — spawn protection and anywhere else. `/rg`. Also gives operators control over land claims. | `regions.tsv` |
+| **perms** | Ranks and nameplates: `[Owner]`, `[Admin]`, `[Player]`. `/perms`, `/nick`. | `perm-groups.tsv`, `perm-players.tsv`, `nicknames.tsv` |
+| **landclaim** | Player block-protection claims, marked out with a gold shovel and budgeted by playtime. | `landclaims.tsv`, `playtime.tsv` |
+| **anticheat** | Detection only — nothing kicks until you enable it. `/ac` shows recent flags. | `ac-alerts.tsv`, `ac-seen.tsv` |
 
-Ops bypass every check in all three -- that was a deliberate choice, so an op has `*`.
+### worldprotect
 
-## Anticheat configuration
+Operator-only. Not a second land claim system: claims are owned by a player and bought with
+playtime, a region is placed by an operator, is bounded in Y as well as X and Z, and carries
+flags.
 
-`config/anticheat.properties` goes in the **world folder**
-(`/opt/infinite/server/world/`), not beside the jar. It is created with defaults on first
-boot if missing.
-
-> [!WARNING]
-> Every check ships with `kick=false`. Nothing kicks anyone until you turn it on, and that
-> is deliberate -- this build has real desync bugs, so a movement check tuned blind will
-> kick real players. Watch `/ac` through a few days of normal play before enabling any kick.
-
-Two settings exist specifically because of false positives seen in the log:
-
-- `movement.consecutive-packets=3` -- one fast packet is not a speed hack. Mob knockback, a
-  teleporter pad, standing up out of a crawl after a relog and a plain lag spike all cover
-  several blocks between two packets. A real speed hack sustains it.
-- `rate.max-breaks-per-second=16` -- sand, gravel and leaves break almost instantly, and
-  mining them by hand reached 11 per second in the log. A nuker breaks far more than this.
-
-## Rebuilding
-
-Needs JDK 8, the server jar, `InfiniteLoader.jar`, and `mixin-0.8.5.jar`.
-
-```sh
-javac -source 8 -target 8 -proc:none -nowarn \
-  -cp "server.jar:InfiniteLoader.jar:mixin-0.8.5.jar" \
-  -d build $(find src -name '*.java')
-cp -r resources/. build/
-jar cf anticheat-0.1.0.jar -C build .
+```
+/rg wand                    then left-click one corner, right-click the other
+/rg define spawn
+/rg flag spawn build deny
 ```
 
-`-proc:none` is not optional. Mixin's annotation processor assumes an obfuscated game and
-fails on this one.
+Flags: `build`, `interact`, `pvp`, `mobs`, `explosions`, `entry`, plus `greeting` and
+`farewell` messages. Every one is enforced — a flag the command accepts but nothing honours is
+worse than none, because whoever set it believes the area is protected. `explosions` suppresses
+block damage only; the creeper still detonates and still hurts.
+
+Overlapping regions resolve by priority, and ties go to the **smaller** region, so a carve-out
+inside a large protected area behaves as drawn.
+
+`/rg claim` inspects, trusts, transfers and deletes player land claims. That bridge is
+reflective, so worldprotect still loads and works if landclaim is absent or disabled.
+
+> [!NOTE]
+> Its mixin sits at priority 500, below the default. landclaim's place hook selects a claim
+> corner and cancels, so whichever ran first decided whether a player could mark out a claim
+> inside spawn protection — load order must not be what settles that.
+
+## Appearing in /help
+
+Addons file their commands under a heading through `HelpCategories`, which lives in the server
+jar. See `docs/MODDING.md` in the Reborn repo. Wrap the call if the addon should also run on an
+older server that predates it.
+
+## Building from source
+
+Needs a JDK 8, the server jar, and `InfiniteLoader.jar`.
+
+```bash
+cp /opt/infinite/server/minecraft-infinite-server.jar server.jar
+cp /opt/infinite/server/InfiniteLoader.jar .
+./build-all.sh
+```
+
+`build-all.ps1` is the same thing for Windows. `-proc:none` is not optional in either: Mixin's
+annotation processor assumes an obfuscated game and fails on this one.
+
+## Retired
+
+`src/retired/` keeps two that are no longer shipped, because the code is still a useful
+reference:
+
+- **hamfix** — early server fixes, since folded into the server jar itself.
+- **moderncmds** — added commands, since folded into the server jar as the `Infinite` command set.

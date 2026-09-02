@@ -1,0 +1,14 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "hamfix"
+version = "0.1.0"
+displayName = "Hamfix Tick Guard"
+description = "Stops cascading chunk generation inside the block-tick loop."
+authors = "hambone"
+entrypoint = "hamfix.HamfixMod"
+
+[[mixins]]
+config = "hamfix.mixins.json"

@@ -1,0 +1,14 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "moderncmds"
+version = "0.1.0"
+displayName = "Modern Commands"
+description = "Adds home, spawn, warps, tpa, msg, list, time and weather."
+authors = "hambone"
+entrypoint = "moderncmds.ModernCommandsMod"
+
+[[mixins]]
+config = "moderncmds.mixins.json"
