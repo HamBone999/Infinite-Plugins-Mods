@@ -21,7 +21,10 @@ public abstract class LoginMixin {
       Alerts.onLogin(this.mcServer, p);
    }
 
-   @Inject(method = "removePlayersFromList", at = @At("HEAD"))
+   // playerLoggedOut, not removePlayersFromList: nothing calls the latter when a player quits,
+   // so this never ran and a player's flag counts survived their disconnect. Harmless while
+   // kicking is off -- it would not have stayed harmless once it was turned on.
+   @Inject(method = "playerLoggedOut", at = @At("HEAD"))
    private void anticheat$forget(EntityPlayerMP p, CallbackInfo ci) {
       Checks.forget(p.getName());
    }

@@ -14,6 +14,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import worldprotect.Guard;
+import worldprotect.Perms;
+import worldprotect.Restore;
 import worldprotect.RegionCommands;
 import worldprotect.RegionStore;
 import worldprotect.WandItem;
@@ -48,16 +50,21 @@ public abstract class GuardMixin {
    private void worldprotect$dig(DigPacket packet, CallbackInfo ci) {
       // Wand first: a left click with the wand sets a corner and must not also break the block.
       if (packet.status == 0 && WandItem.isHeld(this.playerEntity)
-         && this.mcServer.configManager.isOp(this.playerEntity.getName().toLowerCase())) {
+         && Perms.may(this.playerEntity, this.mcServer, "rg.wand")) {
          RegionStore.setCorner(this.playerEntity.getName(), true,
             packet.xPosition, packet.yPosition, packet.zPosition);
          this.playerEntity.addChatMessage("Corner 1: "
             + packet.xPosition + "," + packet.yPosition + "," + packet.zPosition);
+         // The client already removed the block on its side; put it back.
+         Restore.block(this.playerEntity, packet.xPosition, packet.yPosition, packet.zPosition);
          ci.cancel();
          return;
       }
 
       if (!Guard.mayBuild(this.playerEntity, this.mcServer, packet.xPosition, packet.zPosition)) {
+         // Same ghost block as the wand leaves: a refused break has to be undone on the client
+         // too, or the region looks broken to the person who was just told they cannot build.
+         Restore.block(this.playerEntity, packet.xPosition, packet.yPosition, packet.zPosition);
          ci.cancel();
       }
    }
@@ -65,7 +72,7 @@ public abstract class GuardMixin {
    @Inject(method = "handlePlace", at = @At("HEAD"), cancellable = true)
    private void worldprotect$place(PlacePacket packet, CallbackInfo ci) {
       if (packet.direction != 255 && WandItem.isHeld(this.playerEntity)
-         && this.mcServer.configManager.isOp(this.playerEntity.getName().toLowerCase())) {
+         && Perms.may(this.playerEntity, this.mcServer, "rg.wand")) {
          RegionStore.setCorner(this.playerEntity.getName(), false,
             packet.xPosition, packet.yPosition, packet.zPosition);
          this.playerEntity.addChatMessage("Corner 2: "

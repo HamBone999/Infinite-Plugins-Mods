@@ -4,6 +4,8 @@ import landclaim.Claim;
 import landclaim.ClaimCommands;
 import landclaim.ClaimLimits;
 import landclaim.ClaimStore;
+import landclaim.Perms;
+import landclaim.Restore;
 import net.minecraft.game.item.ItemList;
 import net.minecraft.network.packet.player.DigPacket;
 import net.minecraft.network.packet.player.PlacePacket;
@@ -40,7 +42,10 @@ public abstract class ProtectionMixin {
       if (c == null) return true;
       String name = this.playerEntity.getName();
       if (c.mayBuild(name)) return true;
-      if (this.mcServer.configManager.isOp(name.toLowerCase())) return true;
+      // "claim.override" lets staff build inside someone else's claim. A separate node from the
+      // claim commands on purpose: being trusted to answer a grief report is not the same as
+      // being trusted to edit any build on the server.
+      if (Perms.may(this.playerEntity, this.mcServer, "claim.override")) return true;
       this.playerEntity.addChatMessage("This land belongs to " + c.owner + ".");
       return false;
    }
@@ -48,6 +53,9 @@ public abstract class ProtectionMixin {
    @Inject(method = "handleBlockDig", at = @At("HEAD"), cancellable = true)
    private void landclaim$guardDig(DigPacket packet, CallbackInfo ci) {
       if (!landclaim$mayEdit(packet.xPosition, packet.zPosition)) {
+         // The client removes a block the moment it is clicked, so refusing the break server
+         // side leaves a hole on screen until something else resends the chunk. Put it back.
+         Restore.block(this.playerEntity, packet.xPosition, packet.yPosition, packet.zPosition);
          ci.cancel();
       }
    }
@@ -78,8 +86,8 @@ public abstract class ProtectionMixin {
       Claim c = new Claim(name.toLowerCase(), first[0], first[1], x, z);
       ClaimStore.clearCorner(name);
 
-      // Ops are unlimited. Everyone else spends from an allowance that grows with playtime.
-      if (!this.mcServer.configManager.isOp(name.toLowerCase())) {
+      // "claim.unlimited" skips the playtime allowance. Ops always hold it.
+      if (!Perms.may(this.playerEntity, this.mcServer, "claim.unlimited")) {
          long remaining = ClaimLimits.remaining(name);
          if (c.area() > remaining) {
             this.playerEntity.addChatMessage("That claim is " + c.area() + " blocks but you only have "

@@ -1,0 +1,14 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "sweeper"
+version = "0.1.0"
+displayName = "Sweeper"
+description = "Merges dropped item stacks to cut entity lag, and can expire old drops and cap mobs."
+authors = "hambone"
+entrypoint = "sweeper.SweeperMod"
+
+[[mixins]]
+config = "sweeper.mixins.json"

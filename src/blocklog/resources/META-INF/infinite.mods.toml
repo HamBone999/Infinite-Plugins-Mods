@@ -1,0 +1,14 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "blocklog"
+version = "0.1.0"
+displayName = "Block Log"
+description = "Logs every block placed and broken, with lookup and rollback. /bl inspect to see who did it."
+authors = "hambone"
+entrypoint = "blocklog.BlockLogMod"
+
+[[mixins]]
+config = "blocklog.mixins.json"

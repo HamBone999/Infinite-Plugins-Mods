@@ -53,9 +53,12 @@ public final class PermStore {
          w.println("# admin gets moderation, and everything a player has, but NOT");
          w.println("# stop / op / deop / perms.");
          w.println("#   \"whitelist.add\" grants just that subcommand; a bare \"whitelist\" grants all of them.");
-         w.println("admin\t+player,kick,ban,unban,whitelist.add,whitelist.list,whitelist.reload,gamemode,give,tp,time,weather,heal,setspawn,setwarp,delwarp,ac,nick\t&c[Admin]\t&c");
+         w.println("#   \"bl.*\" grants every /bl subcommand; \"bl.lookup\" grants only that one.");
+         w.println("# admin can read the block log and undo damage, but not purge the log itself");
+         w.println("# -- an admin who can erase the record of what they did is not an audit trail.");
+         w.println("admin\t+player,kick,ban,unban,whitelist.add,whitelist.list,whitelist.reload,gamemode,give,tp,tphere,time,weather,heal,feed,repair,top,broadcast,burn,smite,setspawn,spawnpoint,setwarp,delwarp,dimension,dim,setblock,fill,clone,summon,kill,killall,clear,effect,enchant,xp,say,god,up,ascend,descend,light,nick,bl.*,sweep.*,chatbridge.*,rg.*,ac.*,claim.override,claim.unlimited\t&c[Admin]\t&c");
          w.println("#");
-         w.println("player\thelp,commands,list,seed,home,sethome,delhome,spawn,back,warp,warps,tpa,tpaccept,tpdeny,msg,r,claim,claiminfo,abandon,trust,untrust\t&a[Player]\t&f");
+         w.println("player\thelp,commands,list,seed,home,sethome,delhome,spawn,back,warp,warps,tpa,tpaccept,tpdeny,msg,r,claim,claiminfo,abandon,trust,untrust,afk,near,ping,me,rules,motd,seen,mail,ignore,helpop,suicide,discord\t&a[Player]\t&f");
       } catch (IOException e) {
          System.out.println("[perms] could not seed " + f + ": " + e);
       } finally { if (w != null) w.close(); }
@@ -195,8 +198,40 @@ public final class PermStore {
       String cmd = command.toLowerCase();
       // a bare "whitelist" grants every subcommand
       if (allowed.contains(cmd)) return true;
+      // "bl.*" is the same thing written explicitly. Both forms are accepted because the
+      // wildcard is what people expect from every other permissions plugin, and a group file
+      // that reads "bl.*" is clearer about intent than one that reads "bl".
+      if (allowed.contains(cmd + ".*")) return true;
       // otherwise a specific "whitelist.add" is required
       if (sub != null && sub.length() > 0 && allowed.contains(cmd + "." + sub.toLowerCase())) return true;
+      return false;
+   }
+
+   /**
+    * Whether a group holds a node, for addons asking about their own subcommands.
+    *
+    * Addons cannot use mayUse for this: it takes the command a player typed, and an addon
+    * deciding whether to show someone the rollback option is asking a question about a node,
+    * not about a line of input. Operators still bypass, for the same reason as everywhere else.
+    */
+   public static synchronized boolean has(String player, String node, boolean isOp) {
+      if (isOp) return true;
+      if (GROUPS.isEmpty()) return false;
+      String g = groupOf(player);
+      if (g.equals("owner")) return true;
+      Set<String> allowed = GROUPS.get(g);
+      if (allowed == null) return false;
+      if (allowed.contains("*")) return true;
+
+      String n = node.toLowerCase();
+      if (allowed.contains(n)) return true;
+
+      // "bl.rollback" is granted by "bl" and by "bl.*" as well as by itself.
+      int dot = n.indexOf('.');
+      if (dot > 0) {
+         String root = n.substring(0, dot);
+         if (allowed.contains(root) || allowed.contains(root + ".*")) return true;
+      }
       return false;
    }
 

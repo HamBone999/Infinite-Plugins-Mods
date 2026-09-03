@@ -1,0 +1,14 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "basics"
+version = "0.1.0"
+displayName = "Basics"
+description = "Everyday commands -- afk, near, mail, ignore, seen, me, rules -- and tidier /help section ordering."
+authors = "hambone"
+entrypoint = "basics.BasicsMod"
+
+[[mixins]]
+config = "basics.mixins.json"

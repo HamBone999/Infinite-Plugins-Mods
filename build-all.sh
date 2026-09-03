@@ -17,15 +17,34 @@ MIXIN_VER=0.8.5
 
 mkdir -p lib
 if [ ! -f lib/mixin.jar ]; then
-   echo "==> fetching mixin $MIXIN_VER"
-   curl -fsSL -o lib/mixin.jar \
-      "https://repo1.maven.org/maven2/org/spongepowered/mixin/$MIXIN_VER/mixin-$MIXIN_VER.jar"
+   # The server ships the exact jar it runs against in libs/, so prefer that -- it cannot be
+   # a version mismatch. Mixin is not on Maven Central; the fallback is Sponge's own repo.
+   if [ -f "libs/mixin-$MIXIN_VER.jar" ]; then
+      echo "==> using libs/mixin-$MIXIN_VER.jar"
+      cp "libs/mixin-$MIXIN_VER.jar" lib/mixin.jar
+   elif [ -f "/opt/infinite/server/libs/mixin-$MIXIN_VER.jar" ]; then
+      echo "==> using the running server's mixin-$MIXIN_VER.jar"
+      cp "/opt/infinite/server/libs/mixin-$MIXIN_VER.jar" lib/mixin.jar
+   else
+      echo "==> fetching mixin $MIXIN_VER"
+      curl -fsSL -o lib/mixin.jar \
+         "https://repo.spongepowered.org/repository/maven-public/org/spongepowered/mixin/$MIXIN_VER/mixin-$MIXIN_VER.jar"
+   fi
 fi
 
 CP="server.jar:InfiniteLoader.jar:lib/mixin.jar"
+# Addons may use what the server already ships in libs/ (gson, for one) rather than adding a
+# jar of their own, so those have to be on the compile classpath as well. Local libs/ first so
+# a checkout anywhere can build; the installed server is only a convenience fallback.
+for d in libs /opt/infinite/server/libs; do
+   if [ -d "$d" ]; then
+      for j in "$d"/*.jar; do [ -e "$j" ] && CP="$CP:$j"; done
+      break
+   fi
+done
 MODS=("$@")
 if [ ${#MODS[@]} -eq 0 ]; then
-   MODS=(worldprotect landclaim perms anticheat)
+   MODS=(worldprotect landclaim perms anticheat blocklog chatbridge sweeper basics)
 fi
 
 for mod in "${MODS[@]}"; do

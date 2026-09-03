@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "chatbridge.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "minVersion": "0.8",
+  "mixins": [
+    "BroadcastMixin",
+    "TickMixin",
+    "CoreCommandsMixin",
+    "WorldTickMixin",
+    "WorldServerAccessor"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

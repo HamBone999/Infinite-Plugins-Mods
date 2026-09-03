@@ -24,12 +24,15 @@ public final class RegionCommands {
          return false;
       }
 
-      if (!server.configManager.isOp(p.getName().toLowerCase())) {
-         msg(p, "Regions are an operator tool.");
+      String sub = a.length > 1 ? a[1].toLowerCase() : "help";
+
+      // Per subcommand, so "rg.info" and "rg.list" can be handed to someone who should be able
+      // to see what is protected without also being able to redraw or delete it.
+      String node = "rg." + sub;
+      if (!sub.equals("help") && !Perms.may(p, server, node)) {
+         msg(p, Perms.denied(node));
          return true;
       }
-
-      String sub = a.length > 1 ? a[1].toLowerCase() : "help";
 
       if (sub.equals("help")) { help(p); return true; }
       if (sub.equals("wand")) { wand(p); return true; }

@@ -1,0 +1,14 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "chatbridge"
+version = "0.1.0"
+displayName = "Chat Bridge"
+description = "Mirrors in-game chat, joins and deaths to a Discord channel, and messages back again."
+authors = "hambone"
+entrypoint = "chatbridge.ChatBridgeMod"
+
+[[mixins]]
+config = "chatbridge.mixins.json"

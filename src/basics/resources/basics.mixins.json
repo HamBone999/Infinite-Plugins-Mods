@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "package": "basics.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "minVersion": "0.8",
+  "mixins": [
+    "CommandMixin",
+    "LoginMixin",
+    "HelpOrderMixin",
+    "CoreCommandsMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

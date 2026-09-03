@@ -3,3 +3,9 @@ server.jar
 InfiniteLoader.jar
 lib/
 build/
+
+# the bot holds a real token
+bot/.env
+bot/__pycache__/
+bot/venv/
+bot/bot.log

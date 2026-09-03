@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "sweeper.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "minVersion": "0.8",
+  "mixins": [
+    "TickMixin",
+    "CommandMixin",
+    "CoreCommandsMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

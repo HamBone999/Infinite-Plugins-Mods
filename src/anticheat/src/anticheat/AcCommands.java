@@ -14,11 +14,12 @@ public final class AcCommands {
       String line = raw.startsWith("/") ? raw.substring(1) : raw;
       String[] a = line.trim().split("\\s+");
       if (!a[0].equalsIgnoreCase("ac") && !a[0].equalsIgnoreCase("anticheat")) return false;
-      if (!s.configManager.isOp(p.getName().toLowerCase())) {
-         p.addChatMessage("You do not have permission for that.");
+      String sub = a.length > 1 ? a[1].toLowerCase() : "recent";
+      String node = "ac." + sub;
+      if (!Perms.may(p, s, node)) {
+         p.addChatMessage(Perms.denied(node));
          return true;
       }
-      String sub = a.length > 1 ? a[1].toLowerCase() : "recent";
 
       if (sub.equals("reload")) {
          Config.load(new File("world", "anticheat.properties"));

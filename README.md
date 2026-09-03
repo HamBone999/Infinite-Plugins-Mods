@@ -12,6 +12,7 @@ sync is untouched. All are server-side only.
 mods/     the jars. Copy into  /opt/infinite/server/mods/
 src/      full source for every addon, including two that are no longer shipped
 config/   example config. These live in the WORLD folder, not next to the jar.
+bot/      the Discord companion bot for chatbridge. Its own process, not a jar.
 ```
 
 ## Installing
@@ -40,6 +41,10 @@ config/   example config. These live in the WORLD folder, not next to the jar.
 | **perms** | Ranks and nameplates: `[Owner]`, `[Admin]`, `[Player]`. `/perms`, `/nick`. | `perm-groups.tsv`, `perm-players.tsv`, `nicknames.tsv` |
 | **landclaim** | Player block-protection claims, marked out with a gold shovel and budgeted by playtime. | `landclaims.tsv`, `playtime.tsv` |
 | **anticheat** | Detection only — nothing kicks until you enable it. `/ac` shows recent flags. | `ac-alerts.tsv`, `ac-seen.tsv` |
+| **blocklog** | Every block placed and broken, with lookup and rollback. `/bl wand` to inspect. | `blocklog.log`, `blocklog.properties` |
+| **chatbridge** | Mirrors chat, joins and deaths to a Discord channel, and back again. `/discord`. | `chatbridge.properties`, `chatbridge-spool/`, `chatbridge-status.tsv` |
+| **sweeper** | Merges dropped item stacks to cut entity lag. Can expire drops and cap mobs. `/sweep`. | `sweeper.properties` |
+| **basics** | Everyday commands — afk, near, mail, ignore, seen, me, rules — and tidier `/help` ordering. | `basics-seen.tsv`, `basics-mail.tsv`, `basics-ignores.tsv`, `rules.txt`, `motd.txt` |
 
 ### worldprotect
 
@@ -95,3 +100,74 @@ reference:
 
 - **hamfix** — early server fixes, since folded into the server jar itself.
 - **moderncmds** — added commands, since folded into the server jar as the `Infinite` command set.
+
+
+## Permissions
+
+Everything is gated through **perms**. A group holds command nodes; operators bypass all of it,
+so a broken permission file can never lock you out of your own server.
+
+```
+*              everything
+bl             every /bl subcommand
+bl.*           the same, written explicitly
+bl.rollback    just that one
+```
+
+Nodes follow the command name, optionally dotted with a subcommand — the same shape as the
+`whitelist.add` that has always shipped in the default group file. Aliases fold onto the long
+form, so `bl.rb` and `bl.rollback` are one node.
+
+| Addon | Nodes |
+| --- | --- |
+| blocklog | `bl.wand` `bl.inspect` `bl.lookup` `bl.page` `bl.rollback` `bl.restore` `bl.purge` `bl.status` |
+| worldprotect | `rg.define` `rg.remove` `rg.flag` `rg.wand` `rg.bypass` `rg.claim` `rg.list` `rg.info` |
+| sweeper | `sweep.now` `sweep.status` |
+| chatbridge | `chatbridge.status` `chatbridge.test` |
+| anticheat | `ac.recent` `ac.reload` … |
+| landclaim | `claim.override` (build inside anyone's claim), `claim.unlimited` (skip the playtime allowance) |
+| basics | `tphere` `feed` `repair` `burn` `smite` `top` `broadcast` — each is a top-level command |
+
+The shipped `admin` group gets all of these except `stop`, `op`, `deop` and `perms`. Those
+either end the server or let someone grant themselves owner, at which point the group split
+stops meaning anything.
+
+> [!NOTE]
+> The `//` region-editor commands stay operator-only. They are gated by an op check inside the
+> server jar itself, so perms cannot grant them without a server build.
+
+## The Discord bridge
+
+Two halves that work independently.
+
+**Minecraft → Discord** is the plugin, over a webhook. Create one in the channel's
+Integrations settings and put the URL in `chatbridge.properties`. That alone is a working
+one-way feed and needs no bot account. Nothing sent from Minecraft can ping anyone: the
+webhook payload sets `allowed_mentions` to nothing, so a player typing `@everyone` in game
+does not notify the server.
+
+**Discord → Minecraft** is either the plugin polling the REST API with a bot token, or —
+better — the companion bot in `bot/`, which holds a gateway connection and hears messages
+instantly. Run one or the other, never both, or every message arrives twice.
+
+The bot hands messages over by writing one file per message into `chatbridge-spool/` under a
+temp name and renaming it into place. Rename is atomic on one filesystem, so the server never
+reads a half-written message. It reads `chatbridge-status.tsv` for its `/players` and
+`/status` commands rather than querying the server, which has no RCON or query port — so a
+wedged bot can never affect a tick.
+
+Setting it up:
+
+```bash
+cd bot
+python3 -m venv venv && ./venv/bin/pip install -r requirements.txt
+cp .env.example .env && chmod 600 .env     # fill in TOKEN and CHANNEL_ID
+sudo cp infinite-chatbot.service /etc/systemd/system/
+sudo systemctl enable --now infinite-chatbot
+```
+
+> [!IMPORTANT]
+> The bot needs the **Message Content** privileged intent enabled in the Discord developer
+> portal. Without it every message arrives with an empty body and the relay forwards blank
+> lines. This is also why the bridge is a separate bot rather than part of an existing one —
+> requesting that intent costs an application its App Discovery eligibility.

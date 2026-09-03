@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "blocklog.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "minVersion": "0.8",
+  "mixins": [
+    "WorldLogMixin",
+    "ActorMixin",
+    "ExplosionActorMixin",
+    "DisconnectMixin",
+    "CoreCommandsMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

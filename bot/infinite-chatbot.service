@@ -1,0 +1,31 @@
+[Unit]
+Description=Minecraft Infinite <-> Discord chat bridge bot
+After=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=5
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=infinite
+Group=infinite
+WorkingDirectory=/opt/infinite/bot
+ExecStart=/opt/infinite/bot/venv/bin/python -u main.py
+# Discord drops connections routinely and the gateway library exits on some of them;
+# always restart, with a delay so a bad token cannot become a login-attempt loop.
+Restart=always
+RestartSec=30
+StandardOutput=append:/opt/infinite/bot/bot.log
+StandardError=append:/opt/infinite/bot/bot.log
+
+# The bot only ever reads and writes under the server's world directory. It has no business
+# anywhere else on the box, and a chat bridge is exactly the kind of thing that gets fed
+# hostile input all day.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/opt/infinite/server/world /opt/infinite/bot
+
+[Install]
+WantedBy=multi-user.target
