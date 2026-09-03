@@ -38,6 +38,19 @@ public final class HelpListing {
          HelpCategories.register(PLAYER_CATEGORY, 0, player);
          HelpCategories.register(OP_CATEGORY, 0, op);
 
+         // Two commands the server jar registers with Brigadier but never files under a
+         // heading, so /help printed them in the unheaded block above every section -- which
+         // read as though they were a different kind of thing rather than just uncategorised.
+         // Filed by who can actually run them: HelpCommand has no requires() so anyone may
+         // use /help, while ScoreCommand gates itself on hasPermission.
+         //
+         // Done from here rather than in CustomCommandHelp because that is in the server jar,
+         // and a heading is not worth a server build and a matching client release. This runs
+         // at CoreCommands.register TAIL, after the jar has filed everything else, so these
+         // are additions to categories that already exist.
+         HelpCategories.register("Infinite", 0, "help");
+         HelpCategories.register("Infinite (op)", 0, "score");
+
          // The subcommands are parsed out of the argument string, so a listing built by walking
          // the command tree cannot see them.
          HelpCategories.line(PLAYER_CATEGORY, "/mail read | /mail send <player> <msg> | /mail clear");

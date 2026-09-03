@@ -7,7 +7,8 @@
     "CommandMixin",
     "LoginMixin",
     "HelpOrderMixin",
-    "CoreCommandsMixin"
+    "CoreCommandsMixin",
+    "HelpDedupeMixin"
   ],
   "client": [],
   "server": [],
