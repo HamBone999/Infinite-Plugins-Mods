@@ -1,0 +1,14 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "teleportfix"
+version = "0.1.0"
+displayName = "Teleport Fix"
+description = "Rate limits teleporter use so rapid hops cannot overload chunk loading, plus temporary diagnostics."
+authors = "hambone"
+entrypoint = "teleportfix.TeleportFixMod"
+
+[[mixins]]
+config = "teleportfix.mixins.json"

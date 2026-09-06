@@ -1,0 +1,14 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mods]]
+modId = "pregen"
+version = "0.1.0"
+displayName = "Pregen"
+description = "Generates terrain ahead of players, a few chunks per tick, so nobody waits on the generator."
+authors = "hambone"
+entrypoint = "pregen.PregenMod"
+
+[[mixins]]
+config = "pregen.mixins.json"

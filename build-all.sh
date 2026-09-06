@@ -44,7 +44,7 @@ for d in libs /opt/infinite/server/libs; do
 done
 MODS=("$@")
 if [ ${#MODS[@]} -eq 0 ]; then
-   MODS=(worldprotect landclaim perms anticheat blocklog chatbridge sweeper basics)
+   MODS=(worldprotect landclaim perms anticheat blocklog chatbridge sweeper basics pregen)
 fi
 
 for mod in "${MODS[@]}"; do
