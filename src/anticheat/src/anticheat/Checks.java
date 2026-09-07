@@ -25,6 +25,11 @@ public final class Checks {
    private Checks() { }
 
    /** Admin, owner and op are skipped entirely -- no bookkeeping, no flags. */
+   private static boolean hasWings(EntityPlayerMP p) {
+      net.minecraft.game.item.ItemStack w = p.inventory.accessorySlots[2];
+      return w != null && w.getItem() == net.minecraft.game.item.ItemList.elytra;
+   }
+
    private static boolean exempt(EntityPlayerMP p) {
       return Config.exemptStaff && Alerts.isStaff(p.mcServer, p.getName());
    }
@@ -100,6 +105,12 @@ public final class Checks {
    public static void airborne(NetServerHandler net, EntityPlayerMP p, double y, boolean onGround) {
       if (!Config.flyEnabled || exempt(p)) return;
       String k = p.getName().toLowerCase();
+      // A seat holds a player 0.7 blocks above the chair, so every packet from someone sitting
+      // reads as "airborne with no descent" -- one long lunch in a chair was a hundred alerts.
+      // Riders are the mount's problem, and anyone wearing wings is allowed to hold altitude.
+      if (p.sitting || p.mount != null || p.isRiding() || hasWings(p)) {
+         onGround = true;
+      }
       if (onGround) {
          AIR.remove(k); AIR_START_Y.remove(k);
          Flags.clear(p.getName(), "fly");
