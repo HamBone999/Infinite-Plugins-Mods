@@ -21,6 +21,9 @@ public final class Config {
    public static boolean rateEnabled     = true,  rateKick     = false;
 
    public static double maxSpeed  = 1.2;   // blocks per movement packet, horizontal
+   public static double maxMountSpeed = 2.0;  // same, while riding: a horse at full tilt is ~1.3
+   public static double maxGlideSpeed = 2.5;  // same, while gliding: a steep dive is ~2
+   public static int    glideWindowMultiplier = 5;  // a glider gets this many fly windows to show net descent
    public static int    speedStreak = 3;   // consecutive over-limit packets before it counts
    public static double maxReach  = 7.0;   // blocks from eye to targeted block
    public static int    maxChat   = 8;     // messages per 10 seconds
@@ -32,7 +35,7 @@ public final class Config {
    public static int    maxBreaks   = 16;   // blocks broken per second
    public static int    maxPlaces   = 10;   // blocks placed per second
    public static int    maxAttacks  = 12;   // attacks per second
-   public static int    maxPackets  = 30;   // movement packets per second
+   public static int    maxPackets  = 45;   // movement packets per second; a client can send position and look separately in one tick
    public static int    flyPackets  = 40;   // consecutive airborne packets with no net descent
    public static double minY = -64.0, maxY = 512.0;
 
@@ -66,6 +69,9 @@ public final class Config {
       maxPackets = (int) dbl(p, "rate.max-move-packets-per-second", maxPackets);
       flyPackets = (int) dbl(p, "fly.airborne-packets", flyPackets);
       maxSpeed    = dbl(p, "movement.max-blocks-per-packet", maxSpeed);
+      maxMountSpeed = dbl(p, "movement.max-blocks-per-packet-mounted", maxMountSpeed);
+      maxGlideSpeed = dbl(p, "movement.max-blocks-per-packet-gliding", maxGlideSpeed);
+      glideWindowMultiplier = (int) dbl(p, "fly.glide-window-multiplier", glideWindowMultiplier);
       speedStreak = (int) dbl(p, "movement.consecutive-packets", speedStreak);
       maxReach    = dbl(p, "reach.max-blocks",     maxReach);
       maxChat     = (int) dbl(p, "spam.max-per-10s", maxChat);
@@ -105,6 +111,10 @@ public final class Config {
          w.println("movement.detect=true");
          w.println("movement.kick=false");
          w.println("movement.max-blocks-per-packet=1.2");
+         w.println("# riders report the mount's position; a horse at full tilt is about 1.3");
+         w.println("movement.max-blocks-per-packet-mounted=2.0");
+         w.println("# a steep glide dive is about 2");
+         w.println("movement.max-blocks-per-packet-gliding=2.5");
          w.println("# One fast packet is not a speed hack. Mob knockback, a teleporter, standing up");
          w.println("# out of a crawl and a plain lag spike all move you a long way in a single packet.");
          w.println("# A real speed hack sustains it, so require this many over-limit packets in a row.");
@@ -131,6 +141,8 @@ public final class Config {
          w.println("fly.detect=true");
          w.println("fly.kick=false");
          w.println("fly.airborne-packets=40");
+         w.println("# a glider must still show net descent, over this many airborne windows");
+         w.println("fly.glide-window-multiplier=5");
          w.println();
          w.println("# Action rates: nuker, scaffold, killaura, timer.");
          w.println("rate.detect=true");
@@ -140,7 +152,7 @@ public final class Config {
          w.println("rate.max-breaks-per-second=16");
          w.println("rate.max-places-per-second=10");
          w.println("rate.max-attacks-per-second=12");
-         w.println("rate.max-move-packets-per-second=30");
+         w.println("rate.max-move-packets-per-second=45");
          w.println();
          w.println("# Admin, owner and op are not checked at all. Staff fly, teleport and build");
          w.println("# fast as a matter of course, so they would trip these constantly.");

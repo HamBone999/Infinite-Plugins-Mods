@@ -25,11 +25,6 @@ public final class Checks {
    private Checks() { }
 
    /** Admin, owner and op are skipped entirely -- no bookkeeping, no flags. */
-   private static boolean hasWings(EntityPlayerMP p) {
-      net.minecraft.game.item.ItemStack w = p.inventory.accessorySlots[2];
-      return w != null && w.getItem() == net.minecraft.game.item.ItemList.elytra;
-   }
-
    private static boolean exempt(EntityPlayerMP p) {
       return Config.exemptStaff && Alerts.isStaff(p.mcServer, p.getName());
    }
@@ -67,21 +62,29 @@ public final class Checks {
       double dist = Math.sqrt(dx * dx + dz * dz);
       if (dist > 64.0) { FAST.remove(k); return; }   // teleport or dimension change, not a cheat
 
+      // Riders report the mount's position now, so they are speed-checked like anyone else --
+      // against the mount's ceiling rather than a walker's. Gliders likewise: a dive is fast,
+      // but not without limit.
+      double limit = Config.maxSpeed;
+      String what = "speed";
+      if (p.mount != null || p.isRiding()) { limit = Config.maxMountSpeed; what = "mount-speed"; }
+      else if (p.isGliding()) { limit = Config.maxGlideSpeed; what = "glide-speed"; }
+
       // A single fast packet means nothing on this build. Mob knockback, a teleporter pad,
       // standing up out of a crawl after a relog, and an ordinary lag spike all cover several
       // blocks between two packets -- those were most of what this check used to report. A real
       // speed hack sustains the pace, so require a run of over-limit packets before believing it.
       int[] streak = FAST.get(k);
       if (streak == null) { streak = new int[] { 0 }; FAST.put(k, streak); }
-      if (dist > Config.maxSpeed) {
+      if (dist > limit) {
          streak[0]++;
          if (streak[0] >= Config.speedStreak) {
-            act(net, p, "speed", String.format("%.2f blocks per packet for %d packets (limit %.2f)",
-                dist, streak[0], Config.maxSpeed), Config.movementKick);
+            act(net, p, what, String.format("%.2f blocks per packet for %d packets (limit %.2f)",
+                dist, streak[0], limit), Config.movementKick);
          }
       } else {
          streak[0] = 0;
-         Flags.clear(p.getName(), "speed");
+         Flags.clear(p.getName(), what);
       }
 
       if (Config.rateEnabled) {
@@ -107,8 +110,8 @@ public final class Checks {
       String k = p.getName().toLowerCase();
       // A seat holds a player 0.7 blocks above the chair, so every packet from someone sitting
       // reads as "airborne with no descent" -- one long lunch in a chair was a hundred alerts.
-      // Riders are the mount's problem, and anyone wearing wings is allowed to hold altitude.
-      if (p.sitting || p.mount != null || p.isRiding() || hasWings(p)) {
+      // Riders are checked as riders (see movement), not as flyers.
+      if (p.sitting || p.mount != null || p.isRiding()) {
          onGround = true;
       }
       if (onGround) {
@@ -120,7 +123,13 @@ public final class Checks {
       if (c == null) { c = new int[] { 0 }; AIR.put(k, c); AIR_START_Y.put(k, Double.valueOf(y)); }
       c[0]++;
       Double startY = AIR_START_Y.get(k);
-      if (c[0] < Config.flyPackets || startY == null) return;
+      // A glide is a real state on the server now (the client announces it, the server checks
+      // wings and that the player is airborne, and clears it on landing). A glide can trade
+      // speed for a little height, but it cannot hold altitude: over a longer window it must
+      // still have come down. So gliders get a longer window, not a pass -- wearing wings on
+      // the ground while hovering is still flying.
+      int window = p.isGliding() ? Config.flyPackets * Config.glideWindowMultiplier : Config.flyPackets;
+      if (c[0] < window || startY == null) return;
       // a real fall loses height; hovering or rising does not
       if (y >= startY.doubleValue() - 1.0) {
          act(net, p, "fly", c[0] + " airborne packets with no descent (y " + String.format("%.1f", y) + ")",
