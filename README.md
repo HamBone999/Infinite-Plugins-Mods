@@ -171,3 +171,9 @@ sudo systemctl enable --now infinite-chatbot
 > portal. Without it every message arrives with an empty body and the relay forwards blank
 > lines. This is also why the bridge is a separate bot rather than part of an existing one —
 > requesting that intent costs an application its App Discovery eligibility.
+
+## Not official · not endorsed
+
+Minecraft Infinite Reborn is an independent, fan-made project. It is **not** official L+, and it is **not** an endorsed or official continuation of that project. Infinite Reborn is not affiliated with, endorsed by, or supported by Method/Yoniko or the original L+ team — all credit for the original L+ work belongs to them.
+
+Some of the tools and code used to build this project were created with the help of AI.
